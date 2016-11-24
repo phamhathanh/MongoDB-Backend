@@ -30,13 +30,8 @@ end
 
 get '/restaurants/:id/?' do |id|
   content_type :json
-  begin
-    restaurant = restaurant_by_id id
-  rescue BSON::ObjectId::Invalid
-    status 400
-    return 'Invalid ID'
-  end
-  
+
+  restaurant = restaurant_by_id id
   output = restaurant.first
   return output.to_json unless output.nil?
 
@@ -50,19 +45,26 @@ helpers do
   end
 
   def restaurant_by_id idString
-    objectId = BSON::ObjectId.from_string(idString)
-    return restaurants.find(_id: objectId).limit(1)
+    begin
+      objectId = BSON::ObjectId.from_string(idString)
+      return restaurants.find(_id: objectId).limit(1)
+    rescue BSON::ObjectId::Invalid
+      halt 400, 'Invalid ID.'
+    end
+  end
+
+  def parse_json_request requestBody
+    requestBody.rewind
+    begin
+      return JSON.parse requestBody.read
+    rescue JSON::ParserError
+      halt 400, 'Invalid JSON.'
+    end
   end
 end
 
 post '/restaurants/?' do
-  request.body.rewind
-  begin
-    payload = JSON.parse request.body.read
-  rescue JSON::ParserError
-    status 400
-    return 'Invalid JSON.'
-  end
+  payload = parse_json_request request.body
 
   payload['ratings'] = []
   result = restaurants.insert_one payload
@@ -74,20 +76,8 @@ post '/restaurants/?' do
 end
 
 patch '/restaurants/:id/?' do |id|
-  request.body.rewind
-  begin
-    payload = JSON.parse request.body.read
-  rescue JSON::ParserError
-    status 400
-    return 'Invalid JSON.'
-  end
-
-  begin
-    restaurant = restaurant_by_id id
-  rescue BSON::ObjectId::Invalid
-    status 400
-    return 'Invalid ID'
-  end
+  restaurant = restaurant_by_id id
+  payload = parse_json_request request.body
 
   cuisine = payload['cuisine']
   restaurant.find_one_and_update('$set': {cuisine: cuisine}) unless cuisine.nil?
@@ -102,33 +92,15 @@ patch '/restaurants/:id/?' do |id|
 end
 
 delete '/restaurants/:id/?' do |id|
-  begin
-    restaurant = restaurant_by_id id
-  rescue BSON::ObjectId::Invalid
-    status 400
-    return 'Invalid ID'
-  end
-
+  restaurant = restaurant_by_id id
   theDeleted = restaurant.find_one_and_delete
   # TODO: Failure case.
   return ''
 end
 
 post '/restaurants/:id/ratings/?' do |id|
-  request.body.rewind
-  begin
-    payload = JSON.parse request.body.read
-  rescue JSON::ParserError
-    status 400
-    return 'Invalid JSON.'
-  end
-  
-  begin
-    restaurant = restaurant_by_id id
-  rescue BSON::ObjectId::Invalid
-    status 400
-    return 'Invalid ID'
-  end
+  restaurant = restaurant_by_id id
+  payload = parse_json_request request.body
 
   score = payload['score']
   # TODO: Validate.
