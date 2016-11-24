@@ -109,3 +109,8 @@ post '/restaurants/:id/ratings/?' do |id|
   status 201
   return ''
 end
+
+get '/coffee/?' do
+  status 418
+  return "I'm a teapot."
+end
