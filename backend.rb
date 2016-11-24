@@ -23,7 +23,7 @@ end
 
 get '/restaurants/?' do
   content_type :json
-  @collection.find.to_a.to_json
+  collection.find.to_a.to_json
 end
 
 get '/restaurants/:id/?' do
@@ -32,11 +32,15 @@ get '/restaurants/:id/?' do
 end
 
 helpers do
+  def collection
+    settings.collection
+  end
+
   def restaurant_by_id id
     id = object_id(id) if String === id
     return {}.to_json if id.nil?
 
-    restaurant = @collection.find(_id: id).to_a.first
+    restaurant = collection.find(_id: id).to_a.first
     (restaurant || {}).to_json
   end
 
@@ -57,22 +61,20 @@ post '/restaurants/search' do
 end
 
 post '/restaurants/?' do
-  puts @collection
-  puts params
   content_type :json
-  result = @collection.insert_one params
+  result = collection.insert_one params
 
   status 201
   body ''
   response.headers['Location '] = result.inserted_id
-  @collection.find(_id: result.inserted_id).to_a.first.to_json
+  collection.find(_id: result.inserted_id).to_a.first.to_json
 end
 
 # This API should be changed.
 put '/update/:id/?' do
   content_type :json
   id = object_id(params[:id])
-  @collection.find(_id: id)
+  collection.find(_id: id)
     .find_one_and_update('$set' => request.params)
   document_by_id(id)
 end
@@ -82,7 +84,7 @@ put '/update_name/:id/?' do
   content_type :json
   id = object_id(params[:id])
   name = params[:name]
-  @collection.find(_id: id)
+  collection.find(_id: id)
     .find_one_and_update('$set' => {name: name})
   document_by_id(id)
 end
