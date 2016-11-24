@@ -64,6 +64,7 @@ post '/restaurants/?' do
   result = collection.insert_one payload
   status 201
   response.headers['Location'] = result.inserted_id
+  return ''
 end
 
 patch '/restaurants/:id/?' do
@@ -77,33 +78,19 @@ patch '/restaurants/:id/?' do
 
   id = object_id_from_string params[:id]
   cuisine = payload['cuisine']
-  collection.find(_id: id)
-    .find_one_and_update('$set': {cuisine: cuisine}) unless cuisine.nil?
+  collection.find_one_and_update({_id: id}, {'$set': {cuisine: cuisine}}) unless cuisine.nil?
 
   name = payload['name']
-  collection.find(_id: id)
-    .find_one_and_update('$set': {name: name}) unless name.nil?
+  collection.find_one_and_update({_id: id}, {'$set': {name: name}}) unless name.nil?
 
     # TODO: Failure case.
     # TODO: Validate (prevent array or something).
   return ''
 end
 
-# This API should be changed.
-put '/update_name/:id/?' do
-  content_type :json
-  id = object_id(params[:id])
-  name = params[:name]
-  collection.find(_id: id)
-    .find_one_and_update('$set' => {name: name})
-  document_by_id(id)
-end
-
 delete '/restaurants/:id' do
-  content_type :json
-  id = object_id(params[:id])
-  hits = @collection.find(_id: id)
-  exists = !restaurant.to_a.first.nil?;
-  hits.find_one_and_delete if exists
-  { success: exists }.to_json
+  id = object_id_from_string params[:id]
+  theDeleted = collection.find_one_and_delete(_id: id)
+    # TODO: Failure case.
+  return ''
 end
