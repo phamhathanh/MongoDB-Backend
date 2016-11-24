@@ -18,7 +18,7 @@ configure do
 end
 
 get '/' do
-  'Hello world!'
+  '<h1>Restaurants API</h1>'
 end
 
 get '/restaurants/?' do
