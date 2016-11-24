@@ -28,12 +28,11 @@ get '/restaurants/?' do
           .to_a.to_json
 end
 
-get '/restaurants/:id/?' do
+get '/restaurants/:id/?' do |id|
   content_type :json
-  id = object_id_from_string params[:id]
-  return {}.to_json if id.nil?
-
-  restaurant = collection.find(_id: id).limit(1).first
+  objectId = object_id_from_string id
+  return {}.to_json if objectId.nil?
+  restaurant = collection.find(_id: objectId).limit(1).first
   return (restaurant || {}).to_json
 end
 
@@ -67,7 +66,7 @@ post '/restaurants/?' do
   return ''
 end
 
-patch '/restaurants/:id/?' do
+patch '/restaurants/:id/?' do |id|
   request.body.rewind
   begin
     payload = JSON.parse request.body.read
@@ -76,26 +75,27 @@ patch '/restaurants/:id/?' do
     return 'Invalid JSON.'
   end
 
-  id = object_id_from_string params[:id]
+  objectId = object_id_from_string id
   cuisine = payload['cuisine']
-  collection.find_one_and_update({_id: id}, {'$set': {cuisine: cuisine}}) unless cuisine.nil?
+  collection.find_one_and_update({_id: objectId}, {'$set': {cuisine: cuisine}}) unless cuisine.nil?
+  # TODO: Validate properly (prevent null/array or something).
 
   name = payload['name']
-  collection.find_one_and_update({_id: id}, {'$set': {name: name}}) unless name.nil?
+  collection.find_one_and_update({_id: objectId}, {'$set': {name: name}}) unless name.nil?
+  # TODO: Validate properly.
 
   # TODO: Failure case.
-  # TODO: Validate (prevent array or something).
   return ''
 end
 
-delete '/restaurants/:id/?' do
-  id = object_id_from_string params[:id]
-  theDeleted = collection.find_one_and_delete(_id: id)
-    # TODO: Failure case.
+delete '/restaurants/:id/?' do |id|
+  objectId = object_id_from_string id
+  theDeleted = collection.find_one_and_delete(_id: objectId)
+  # TODO: Failure case.
   return ''
 end
 
-post '/restaurants/:id/ratings/?' do
+post '/restaurants/:id/ratings/?' do |id|
   request.body.rewind
   begin
     payload = JSON.parse request.body.read
@@ -104,12 +104,14 @@ post '/restaurants/:id/ratings/?' do
     return 'Invalid JSON.'
   end
 
-  id = object_id_from_string params[:id]
+  objectId = object_id_from_string id
 
   score = payload['score']
   # TODO: Validate.
 
-  result = collection.find_one_and_update({_id: id}, {'$push': {ratings: {date: Date.today, score: score}}})
+  result = collection
+    .find_one_and_update({_id: objectId},
+      {'$push': {ratings: {date: Date.today, score: score}}})
   status 201
   return ''
 end
