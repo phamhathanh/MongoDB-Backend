@@ -13,7 +13,7 @@ end
 
 configure do
   collections = Mongo::Client.new(['127.0.0.1:27017'], :database => 'test')
-  set :collection, collections[:restaurants]
+  set :restaurants, collections[:restaurants]
   set :bind, '0.0.0.0'
 end
 
@@ -24,29 +24,34 @@ end
 get '/restaurants/?' do
   content_type :json
   query = params[:query] || ''
-  return collection.find(name: {'$regex': query, '$options': 'i'})
+  return restaurants.find(name: {'$regex': query, '$options': 'i'})
           .to_a.to_json
 end
 
 get '/restaurants/:id/?' do |id|
   content_type :json
-  objectId = object_id_from_string id
-  return {}.to_json if objectId.nil?
-  restaurant = collection.find(_id: objectId).limit(1).first
-  return (restaurant || {}).to_json
+  begin
+    restaurant = restaurant_by_id id
+  rescue BSON::ObjectId::Invalid
+    status 400
+    return 'Invalid ID'
+  end
+  
+  output = restaurant.first
+  return output.to_json unless output.nil?
+
+  status 404
+  return ''
 end
 
 helpers do
-  def collection
-    return settings.collection
+  def restaurants
+    return settings.restaurants
   end
 
-  def object_id_from_string idString
-    begin
-      return BSON::ObjectId.from_string(idString)
-    rescue BSON::ObjectId::Invalid
-      return nil
-    end
+  def restaurant_by_id idString
+    objectId = BSON::ObjectId.from_string(idString)
+    return restaurants.find(_id: objectId).limit(1)
   end
 end
 
@@ -60,7 +65,9 @@ post '/restaurants/?' do
   end
 
   payload['ratings'] = []
-  result = collection.insert_one payload
+  result = restaurants.insert_one payload
+  # TODO: Validate the inserted values.
+
   status 201
   response.headers['Location'] = result.inserted_id
   return ''
@@ -75,13 +82,19 @@ patch '/restaurants/:id/?' do |id|
     return 'Invalid JSON.'
   end
 
-  objectId = object_id_from_string id
+  begin
+    restaurant = restaurant_by_id id
+  rescue BSON::ObjectId::Invalid
+    status 400
+    return 'Invalid ID'
+  end
+
   cuisine = payload['cuisine']
-  collection.find_one_and_update({_id: objectId}, {'$set': {cuisine: cuisine}}) unless cuisine.nil?
+  restaurant.find_one_and_update('$set': {cuisine: cuisine}) unless cuisine.nil?
   # TODO: Validate properly (prevent null/array or something).
 
   name = payload['name']
-  collection.find_one_and_update({_id: objectId}, {'$set': {name: name}}) unless name.nil?
+  restaurant.find_one_and_update('$set': {name: name}) unless name.nil?
   # TODO: Validate properly.
 
   # TODO: Failure case.
@@ -89,8 +102,14 @@ patch '/restaurants/:id/?' do |id|
 end
 
 delete '/restaurants/:id/?' do |id|
-  objectId = object_id_from_string id
-  theDeleted = collection.find_one_and_delete(_id: objectId)
+  begin
+    restaurant = restaurant_by_id id
+  rescue BSON::ObjectId::Invalid
+    status 400
+    return 'Invalid ID'
+  end
+
+  theDeleted = restaurant.find_one_and_delete
   # TODO: Failure case.
   return ''
 end
@@ -103,15 +122,18 @@ post '/restaurants/:id/ratings/?' do |id|
     status 400
     return 'Invalid JSON.'
   end
-
-  objectId = object_id_from_string id
+  
+  begin
+    restaurant = restaurant_by_id id
+  rescue BSON::ObjectId::Invalid
+    status 400
+    return 'Invalid ID'
+  end
 
   score = payload['score']
   # TODO: Validate.
 
-  result = collection
-    .find_one_and_update({_id: objectId},
-      {'$push': {ratings: {date: Date.today, score: score}}})
+  result = restaurant.find_one_and_update('$push': {ratings: {date: Date.today, score: score}})
   status 201
   return ''
 end
