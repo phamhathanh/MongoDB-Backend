@@ -23,12 +23,12 @@ end
 
 get '/restaurants/?' do
   content_type :json
-  collection.find.to_a.to_json
+  collection.find.projection(_id: false).to_a.to_json
 end
 
 get '/restaurants/:id/?' do
   content_type :json
-  restaurant_by_id(params[:id])
+  restaurant_by_id params[:id]
 end
 
 helpers do
@@ -40,13 +40,16 @@ helpers do
     id = object_id(id) if String === id
     return {}.to_json if id.nil?
 
-    restaurant = collection.find(_id: id).to_a.first
+    restaurant = collection
+                  .find(_id: id).limit(1)
+                  .projection(_id: false)
+                  .first
     (restaurant || {}).to_json
   end
 
-  def object_id val
+  def object_id value
     begin
-      BSON::ObjectId.from_string(val)
+      BSON::ObjectId.from_string(value)
     rescue BSON::ObjectId::Invalid
       nil
     end
