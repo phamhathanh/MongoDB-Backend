@@ -17,7 +17,7 @@ configure do
   set :bind, '0.0.0.0'
 end
 
-get '/' do
+get '/?' do
   return '<h1>Restaurants API</h1>'
 end
 
@@ -83,14 +83,33 @@ patch '/restaurants/:id/?' do
   name = payload['name']
   collection.find_one_and_update({_id: id}, {'$set': {name: name}}) unless name.nil?
 
-    # TODO: Failure case.
-    # TODO: Validate (prevent array or something).
+  # TODO: Failure case.
+  # TODO: Validate (prevent array or something).
   return ''
 end
 
-delete '/restaurants/:id' do
+delete '/restaurants/:id/?' do
   id = object_id_from_string params[:id]
   theDeleted = collection.find_one_and_delete(_id: id)
     # TODO: Failure case.
+  return ''
+end
+
+post '/restaurants/:id/ratings/?' do
+  request.body.rewind
+  begin
+    payload = JSON.parse request.body.read
+  rescue JSON::ParserError
+    status 400
+    return 'Invalid JSON.'
+  end
+
+  id = object_id_from_string params[:id]
+
+  score = payload['score']
+  # TODO: Validate.
+
+  result = collection.find_one_and_update({_id: id}, {'$push': {ratings: {date: Date.today, score: score}}})
+  status 201
   return ''
 end
