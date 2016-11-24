@@ -60,6 +60,7 @@ post '/restaurants/?' do
     return 'Invalid JSON.'
   end
 
+  payload['ratings'] = []
   result = collection.insert_one payload
   status 201
   response.headers['Location'] = result.inserted_id
