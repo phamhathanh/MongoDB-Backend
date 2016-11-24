@@ -24,12 +24,14 @@ end
 get '/restaurants/?' do
   content_type :json
   query = params[:query] || ''
-  collection.find(name: { '$regex': query, '$options': 'i' }).projection(_id: false).to_a.to_json
+  return collection.find(name: { '$regex': query, '$options': 'i' })
+          .projection(_id: false)
+          .to_a.to_json
 end
 
 get '/restaurants/:id/?' do
   content_type :json
-  restaurant_by_id params[:id]
+  return restaurant_by_id params[:id]
 end
 
 helpers do
@@ -43,8 +45,7 @@ helpers do
     restaurant = collection.find(id: id)
                   .projection(_id: false)
                   .limit(1).first
-    return {}.to_json if restaurant.nil?
-    restaurant.to_json
+    return (restaurant || {}).to_json
   end
 end
 
