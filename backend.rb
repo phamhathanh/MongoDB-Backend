@@ -23,7 +23,7 @@ end
 
 get '/restaurants/?' do
   content_type :json
-  query = params[:query]
+  query = params[:query] || ''
   collection.find(name: { '$regex': query, '$options': 'i' }).projection(_id: false).to_a.to_json
 end
 
@@ -38,22 +38,13 @@ helpers do
   end
 
   def restaurant_by_id id
-    id = object_id(id) if String === id
     return {}.to_json if id.nil?
 
-    restaurant = collection
-                  .find(_id: id).limit(1)
+    restaurant = collection.find(id: id)
                   .projection(_id: false)
-                  .first
-    (restaurant || {}).to_json
-  end
-
-  def object_id value
-    begin
-      BSON::ObjectId.from_string(value)
-    rescue BSON::ObjectId::Invalid
-      nil
-    end
+                  .limit(1).first
+    return {}.to_json if restaurant.nil?
+    restaurant.to_json
   end
 end
 
