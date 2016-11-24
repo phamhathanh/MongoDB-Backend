@@ -4,9 +4,9 @@ require 'json/ext'
 
 before do
   if request.request_method == 'OPTIONS'
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "POST"
-
+    response.headers["Access-Control-Allow-Origin"] = '*'
+    response.headers["Access-Control-Allow-Methods"] = 'POST'
+    response.headers["Access-Control-Allow-Methods"] = 'PATCH'
     halt 200
   end
 end
