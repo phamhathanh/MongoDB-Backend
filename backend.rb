@@ -78,8 +78,14 @@ patch '/restaurants/:id/?' do
   id = object_id_from_string params[:id]
   cuisine = payload['cuisine']
   collection.find(_id: id)
-    .find_one_and_update('$set': {cuisine: cuisine})
+    .find_one_and_update('$set': {cuisine: cuisine}) unless cuisine.nil?
+
+  name = payload['name']
+  collection.find(_id: id)
+    .find_one_and_update('$set': {name: name}) unless name.nil?
+
     # TODO: Failure case.
+    # TODO: Validate (prevent array or something).
   return ''
 end
 
