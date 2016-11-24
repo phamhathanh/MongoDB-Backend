@@ -23,7 +23,8 @@ end
 
 get '/restaurants/?' do
   content_type :json
-  collection.find.projection(_id: false).to_a.to_json
+  query = params[:query]
+  collection.find(name: { '$regex': query, '$options': 'i' }).projection(_id: false).to_a.to_json
 end
 
 get '/restaurants/:id/?' do
