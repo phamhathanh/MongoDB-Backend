@@ -55,14 +55,19 @@ end
 
 post '/restaurants/?' do
   request.body.rewind
-  payload = JSON.parse request.body.read
+  begin
+    payload = JSON.parse request.body.read
+  rescue JSON::ParserError
+    status 400
+    return '<h1>Bad Request</h1>'
+  end
 
-  result = collection.insert_one params
+  result = collection.insert_one payload
 
   status 201
-  body ''
-  response.headers['Location '] = result.inserted_id
+  response.headers['Location'] = result.inserted_id
   collection.find(_id: result.inserted_id).to_a.first.to_json
+  return '<h1>Created</h1>'
 end
 
 # This API should be changed.
