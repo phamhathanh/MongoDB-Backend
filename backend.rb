@@ -30,7 +30,11 @@ end
 
 get '/restaurants/:id/?' do
   content_type :json
-  return restaurant_by_id params[:id]
+  id = object_id_from_string params[:id]
+  return {}.to_json if id.nil?
+
+  restaurant = collection.find(_id: id).limit(1).first
+  return (restaurant || {}).to_json
 end
 
 helpers do
@@ -38,18 +42,12 @@ helpers do
     return settings.collection
   end
 
-  def restaurant_by_id id
+  def object_id_from_string idString
     begin
-      objectId = BSON::ObjectId.from_string(id)
+      return BSON::ObjectId.from_string(idString)
     rescue BSON::ObjectId::Invalid
-      return {}.to_json
+      return nil
     end
-    return {}.to_json if objectId.nil?
-
-    restaurant = collection.find(_id: objectId)
-                  .projection(_id: false)
-                  .limit(1).first
-    return (restaurant || {}).to_json
   end
 end
 
@@ -63,16 +61,25 @@ post '/restaurants/?' do
   end
 
   result = collection.insert_one payload
-
   status 201
   response.headers['Location'] = result.inserted_id
 end
 
 patch '/restaurants/:id/?' do
-  id = object_id(params[:id])
+  request.body.rewind
+  begin
+    payload = JSON.parse request.body.read
+  rescue JSON::ParserError
+    status 400
+    return 'Invalid JSON.'
+  end
+
+  id = object_id_from_string params[:id]
+  cuisine = payload['cuisine']
   collection.find(_id: id)
-    .find_one_and_update('$set' => request.params)
-  document_by_id(id)
+    .find_one_and_update('$set': {cuisine: cuisine})
+    # TODO: Failure case.
+  return ''
 end
 
 # This API should be changed.
