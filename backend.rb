@@ -18,14 +18,13 @@ configure do
 end
 
 get '/' do
-  '<h1>Restaurants API</h1>'
+  return '<h1>Restaurants API</h1>'
 end
 
 get '/restaurants/?' do
   content_type :json
   query = params[:query] || ''
-  return collection.find(name: { '$regex': query, '$options': 'i' })
-          .projection(_id: false)
+  return collection.find(name: {'$regex': query, '$options': 'i'})
           .to_a.to_json
 end
 
@@ -36,28 +35,28 @@ end
 
 helpers do
   def collection
-    settings.collection
+    return settings.collection
   end
 
   def restaurant_by_id id
-    return {}.to_json if id.nil?
+    begin
+      objectId = BSON::ObjectId.from_string(id)
+    rescue BSON::ObjectId::Invalid
+      return {}.to_json
+    end
+    return {}.to_json if objectId.nil?
 
-    restaurant = collection.find(id: id)
+    restaurant = collection.find(_id: objectId)
                   .projection(_id: false)
                   .limit(1).first
     return (restaurant || {}).to_json
   end
 end
 
-post '/restaurants/search' do
-  request.body.rewind
-  request_payload = JSON.parse request.body.read
-  print request_payload
-  # do something with the payload
-end
-
 post '/restaurants/?' do
-  content_type :json
+  request.body.rewind
+  payload = JSON.parse request.body.read
+
   result = collection.insert_one params
 
   status 201
