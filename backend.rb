@@ -59,20 +59,16 @@ post '/restaurants/?' do
     payload = JSON.parse request.body.read
   rescue JSON::ParserError
     status 400
-    return '<h1>Bad Request</h1>'
+    return 'Invalid JSON.'
   end
 
   result = collection.insert_one payload
 
   status 201
   response.headers['Location'] = result.inserted_id
-  collection.find(_id: result.inserted_id).to_a.first.to_json
-  return '<h1>Created</h1>'
 end
 
-# This API should be changed.
-put '/update/:id/?' do
-  content_type :json
+patch '/restaurants/:id/?' do
   id = object_id(params[:id])
   collection.find(_id: id)
     .find_one_and_update('$set' => request.params)
