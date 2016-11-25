@@ -111,6 +111,18 @@ post '/restaurants/:id/ratings/?' do |id|
   return ''
 end
 
+put '/restaurants/:id/fields/:field' do |id, field|
+  restaurant = restaurant_by_id id
+  payload = parse_json_request request.body
+
+  value = payload['value']
+  # TODO: Validate.
+
+  result = restaurant.find_one_and_update('$set': {fields: {field => value}})
+  status 200
+  return ''
+end
+
 get '/coffee/?' do
   status 418
   return "I'm a teapot."
