@@ -3,11 +3,10 @@ require 'mongo'
 require 'json/ext'
 
 before do
+  response.headers["Access-Control-Allow-Origin"] = '*'
   if request.request_method == 'OPTIONS'
-    response.headers["Access-Control-Allow-Origin"] = '*'
-    response.headers["Access-Control-Allow-Methods"] = 'POST,PATCH,DELETE'
+    response.headers["Access-Control-Allow-Methods"] = 'GET, POST , PUT, PATCH ,DELETE'
     response.headers["Access-Control-Allow-Headers"] = 'Content-Type'
-    response.headers["Allow"] = 'GET,POST,PATCH,DELETE,OPTIONS'
     halt 200
   end
 end
